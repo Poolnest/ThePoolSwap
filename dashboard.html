@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketplace</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="app.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+
+<body>
+    <header>
+        <h1>Marketplace</h1>
+    </header>
+    <nav>
+        <a href="dashboard.html">Marketplace</a>
+		<a href="add-listing.html">Sell</a>
+        <a href="favorites.html">Favorites</a>
+        <a href="messages.html">Messages</a>
+		<a href="donate.html">Donate</a>
+        <a href="account.html">Account</a>
+    </nav>
+    <div class="main-container">
+        <div class="map-container">
+            <div id="map" style="height: 100%; width: 100%;"></div>
+            <div class="filter-container">
+                <form id="filterForm">
+                    <label for="listingType">Listing Type:</label>
+                    <select id="listingType" name="listingType">
+                        <option value="all">All</option>
+                        <option value="pool">Individual Pool</option>
+                        <option value="route">Route</option>
+                        <option value="business">Business</option>
+                    </select>
+
+                    <label for="priceRange">Price Range:</label>
+                    <input type="text" id="priceRange" name="priceRange" placeholder="$ Min - $ Max">
+
+                    <label for="city">City:</label>
+                    <input type="text" id="city" name="city">
+
+                    <button type="submit">Apply Filters</button>
+                </form>
+            </div>
+        </div>
+        <div class="sidebar" id="listingsSidebar">
+            <a href="add-listing.html" class="add-listing-button">Add Listing</a>
+            <!-- Listing summary items will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <!-- Modal for listing details -->
+    <div id="listingModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <div id="modalContent">
+                <!-- Listing details will be dynamically added here -->
+            </div>
+            <div id="routeMap" style="height: 300px; width: 100%; margin-top: 20px;"></div>
+        </div>
+    </div>
+<div id="listingsSidebar"></div>
+
+  <script>
+    async function initMap() {
+        let userCity = { lat: 33.4484, lng: -112.0740 }; // Default to Phoenix, AZ
+
+        // Fetch user information to get city coordinates (assuming user email is known)
+        const email = localStorage.getItem('userEmail'); // Assuming email is stored in localStorage after login
+
+        try {
+            if (email) {
+                const userResponse = await fetch(`/user-info?email=${encodeURIComponent(email)}`);
+                if (userResponse.ok) {
+                    const userData = await userResponse.json();
+                    if (userData.latitude && userData.longitude) {
+                        userCity = { lat: userData.latitude, lng: userData.longitude };
+                    }
+                } else {
+                    console.error('Failed to fetch user info:', userResponse.statusText);
+                }
+            }
+
+            // Initialize the map centered on userCity
+            const map = new google.maps.Map(document.getElementById("map"), {
+                center: userCity,
+                zoom: 10,
+            });
+
+            let activeMarker = null;
+            let activePolygon = null;
+            let activePins = [];
+
+            // Fetch listings to show on map
+            const response = await fetch('/listings');
+            if (!response.ok) {
+                throw new Error(`Network response was not ok. Status: ${response.status}`);
+            }
+
+            const listings = await response.json();
+            console.log('Fetched listings:', listings);
+
+            if (listings.length === 0) {
+                console.warn('No listings available in the listings.json file.');
+            } else {
+                listings.forEach(listing => {
+                    console.log('Processing listing:', listing);
+
+                    if (listing.latitude && listing.longitude) {
+                        if (listing.listingType === 'route' || listing.listingType === 'business') {
+                            // Generate a single bubble polygon that encompasses all route or business locations
+                            if (listing.addresses && listing.addresses.length > 0) {
+                                // Collect all address points and add random offsets
+                                const points = listing.addresses.map(addr => ({
+                                    lat: addr.latitude + (Math.random() - 0.5) * 0.002,
+                                    lng: addr.longitude + (Math.random() - 0.5) * 0.002
+                                }));
+
+                                // Filter out points that are beyond 3 miles from the nearest other point
+                                const filteredPoints = points.filter(point => {
+                                    return points.some(otherPoint => {
+                                        if (point === otherPoint) return false;
+                                        const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                                            new google.maps.LatLng(point.lat, point.lng),
+                                            new google.maps.LatLng(otherPoint.lat, otherPoint.lng)
+                                        );
+                                        return distance <= 4828.03; // 3 miles in meters
+                                    });
+                                });
+
+                                // Detect outliers
+                                const outliers = listing.addresses.filter(addr => {
+                                    return !filteredPoints.some(point => {
+                                        const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                                            new google.maps.LatLng(addr.latitude, addr.longitude),
+                                            new google.maps.LatLng(point.lat, point.lng)
+                                        );
+                                        return distance <= 4828.03; // 3 miles in meters
+                                    });
+                                });
+
+                                // Expand each filtered point by 1/3 of a mile (approximately 0.5334 km)
+                                const expandedPoints = filteredPoints.flatMap(point => createBufferAroundPoint(point, 0.5334));
+
+                                // Create a convex hull around the expanded points and smooth the shape
+                                const hullPoints = calculateSmoothHull(expandedPoints);
+
+                                // Create a polygon to represent the bubble around all points
+                                const bubblePolygon = new google.maps.Polygon({
+                                    paths: hullPoints,
+                                    strokeColor: "#4CAF50",
+                                    strokeOpacity: 0.8,
+                                    strokeWeight: 2,
+                                    fillColor: "#4CAF50",
+                                    fillOpacity: 0.35,
+                                    map,
+                                });
+								// Calculate the center of the polygon
+							const polygonCenter = hullPoints.reduce(
+								(acc, point) => {
+									acc.lat += point.lat;
+									acc.lng += point.lng;
+									return acc;
+								},
+								{ lat: 0, lng: 0 }
+							);
+
+							polygonCenter.lat /= hullPoints.length;
+							polygonCenter.lng /= hullPoints.length;
+
+							// Create a custom overlay for the number of listings
+							const overlayDiv = document.createElement('div');
+							overlayDiv.style.position = 'absolute';
+							overlayDiv.style.fontWeight = 'bold';
+							overlayDiv.style.color = '#000'; // Black text color for visibility
+							overlayDiv.style.backgroundColor = 'none'; // Semi-transparent white background
+							overlayDiv.style.padding = '2px 5px';
+							overlayDiv.style.borderRadius = '3px';
+							overlayDiv.style.pointerEvents = 'none'; // Ensures pins remain clickable beneath the number
+							overlayDiv.innerText = `${listing.addresses.length}`; // Display number of listings
+
+							const listingCountOverlay = new google.maps.OverlayView();
+							listingCountOverlay.onAdd = function () {
+								const panes = this.getPanes();
+								panes.overlayLayer.appendChild(overlayDiv);
+							};
+
+							listingCountOverlay.draw = function () {
+								const projection = this.getProjection();
+								const pixelPosition = projection.fromLatLngToDivPixel(
+									new google.maps.LatLng(polygonCenter.lat, polygonCenter.lng)
+								);
+
+								// Get the bounding box of the polygon
+								const bounds = new google.maps.LatLngBounds();
+								hullPoints.forEach(point => bounds.extend(new google.maps.LatLng(point.lat, point.lng)));
+
+								// Calculate the bounding box dimensions in pixels
+								const topRight = projection.fromLatLngToDivPixel(bounds.getNorthEast());
+								const bottomLeft = projection.fromLatLngToDivPixel(bounds.getSouthWest());
+								const boxWidth = Math.abs(topRight.x - bottomLeft.x);
+								const boxHeight = Math.abs(topRight.y - bottomLeft.y);
+
+								// Set the font size based on the smaller dimension of the bounding box
+								const maxFontSize = 24; // Maximum font size
+								const minFontSize = 12; // Minimum font size
+								const fontSize = Math.max(minFontSize, Math.min(maxFontSize, Math.min(boxWidth, boxHeight) / 4));
+								overlayDiv.style.fontSize = `${fontSize}px`;
+
+								// Dynamically position the text in the center of the polygon
+								overlayDiv.style.left = `${pixelPosition.x - overlayDiv.offsetWidth / 2}px`;
+								overlayDiv.style.top = `${pixelPosition.y - overlayDiv.offsetHeight / 2}px`;
+							};
+
+							listingCountOverlay.onRemove = function () {
+								overlayDiv.parentNode.removeChild(overlayDiv);
+							};
+
+							listingCountOverlay.setMap(map);
+
+
+								// Add asterisk to polygons with outliers
+							if (outliers.length > 0) {
+								// Find the top-right edge of the polygon
+								function findTopRightEdge(points) {
+									return points.reduce((topRight, point) => {
+										if (
+											point.lat > topRight.lat || 
+											(point.lat === topRight.lat && point.lng > topRight.lng)
+										) {
+											return point;
+										}
+										return topRight;
+									}, { lat: -90, lng: -180 });
+								}
+
+								const topRightEdge = findTopRightEdge(hullPoints);
+
+								// Create the asterisk overlay
+								const overlayDiv = document.createElement('div');
+								overlayDiv.innerHTML = '*';
+								overlayDiv.style.position = 'absolute';
+								overlayDiv.style.fontSize = '24px'; // Fixed size
+								overlayDiv.style.fontWeight = 'bold';
+								overlayDiv.style.color = '#FF0000'; // Red for visibility
+								overlayDiv.style.backgroundColor = 'none'; // Semi-transparent background
+								overlayDiv.style.padding = '4px';
+								overlayDiv.style.borderRadius = '3px';
+								overlayDiv.style.cursor = 'pointer'; // Indicates clickability
+								overlayDiv.style.zIndex = '999'; // Ensure it appears above the polygon
+
+								// Add click event to the asterisk
+								overlayDiv.addEventListener('click', (event) => {
+									event.stopPropagation(); // Prevent event from bubbling up
+									alert('This listing includes locations that are more than 3 miles away from the nearest location. To maintain clarity these outliers are excluded from the shape design.');
+								});
+
+								const asteriskOverlay = new google.maps.OverlayView();
+								asteriskOverlay.onAdd = function () {
+									const panes = this.getPanes();
+									panes.overlayMouseTarget.appendChild(overlayDiv); // Add to the mouse target layer
+								};
+
+								asteriskOverlay.draw = function () {
+									const projection = this.getProjection();
+									const pixelPosition = projection.fromLatLngToDivPixel(
+										new google.maps.LatLng(topRightEdge.lat, topRightEdge.lng)
+									);
+
+									// Dynamically position the asterisk
+									overlayDiv.style.left = `${pixelPosition.x - overlayDiv.offsetWidth / 2}px`;
+									overlayDiv.style.top = `${pixelPosition.y - overlayDiv.offsetHeight / 2}px`;
+								};
+
+								asteriskOverlay.onRemove = function () {
+									overlayDiv.parentNode.removeChild(overlayDiv);
+								};
+
+								asteriskOverlay.setMap(map);
+								}
+                           
+                                // Click event for polygon
+								google.maps.event.addListener(bubblePolygon, 'click', () => {
+									if (activePolygon !== bubblePolygon) {
+										resetActiveElements(); // Reset previous active elements
+									}
+
+									// Highlight the clicked polygon
+									bubblePolygon.setOptions({ strokeColor: "#FF0000" });
+									activePolygon = bubblePolygon;
+
+									// Add individual pins for each location in the route or business
+									if (activePins.length === 0) {
+										listing.addresses.forEach(addr => {
+											const position = {
+												lat: addr.latitude + (Math.random() - 0.5) * 0.004,
+												lng: addr.longitude + (Math.random() - 0.5) * 0.004,
+											};
+
+											const marker = new google.maps.Marker({
+												position,
+												map,
+												title: "Listing Address",
+												icon: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+											});
+											activePins.push(marker);
+
+											// Add click event for each marker to reopen the modal
+											marker.addListener('click', () => {
+												showListingModal(listing);
+											});
+										});
+									}
+
+									// Show the popup with listing details
+									showListingModal(listing);
+								});
+
+
+								// Close modal without resetting active elements
+								const closeModalButton = document.querySelector('.close-button');
+								closeModalButton.addEventListener('click', () => {
+									document.getElementById('listingModal').style.display = "none"; // Close modal
+								});
+
+								// Ensure clicking outside the modal closes it
+								window.addEventListener('click', event => {
+									if (event.target === document.getElementById('listingModal')) {
+										document.getElementById('listingModal').style.display = "none"; // Close modal
+									}
+								});
+
+
+                            }
+							
+                        } else if (listing.listingType === 'individual') {
+                            // Random offset for individual pool listings
+                            const position = {
+                                lat: listing.latitude + (Math.random() - 0.5) * 0.004,
+                                lng: listing.longitude + (Math.random() - 0.5) * 0.004,
+                            };
+
+                            const marker = new google.maps.Marker({
+                                position,
+                                map,
+                                title: listing.listingType,
+                                icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+                            });
+
+                            // Add click event to marker
+                            marker.addListener('click', () => {
+                                if (activeMarker || activePolygon) {
+                                    resetActiveElements();
+                                }
+                                marker.setIcon('http://maps.google.com/mapfiles/ms/icons/red-dot.png');
+                                map.setCenter(marker.getPosition());
+                                map.setZoom(12);
+                                activeMarker = marker;
+                                showListingModal(listing);
+                            });
+
+                            // Display listing in the sidebar
+                            const listingElement = document.createElement('div');
+                            listingElement.classList.add('listing');
+                            listingElement.innerHTML = `
+                                <img src="${listing.photos ? listing.photos[0] : 'default-image.jpg'}" alt="Listing Photo" class="listing-photo">
+                                <div class="listing-title">Single Stop</div>
+                                <div class="listing-price">
+									${listing.askingPrice ? `Price: $${Math.round(listing.askingPrice).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : 'Price not available'}, 
+									${listing.monthlyIncome ? `Inc.: $${Math.round(listing.monthlyIncome).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}/month` : 'Income not available'}
+								</div>
+                                <div class="listing-address">${listing.city}, ${listing.state}, ${listing.zipCode}</div>
+                            `;
+                            document.getElementById('listingsSidebar').appendChild(listingElement);
+
+                            // Add click event for the listing element in the sidebar
+                            listingElement.addEventListener('click', () => {
+                                if (activeMarker || activePolygon) {
+                                    resetActiveElements();
+                                }
+                                marker.setIcon('http://maps.google.com/mapfiles/ms/icons/red-dot.png');
+                                map.setCenter(marker.getPosition());
+                                map.setZoom(12);
+                                activeMarker = marker;
+                                showListingModal(listing);
+                            });
+                        }
+                    } else {
+                        console.warn('Listing does not have latitude and longitude:', listing);
+                    }
+                });
+            }
+
+            // Function to reset the active elements (polygon, markers)
+			function resetActiveElements() {
+				if (activeMarker instanceof google.maps.Marker) {
+					activeMarker.setIcon('http://maps.google.com/mapfiles/ms/icons/blue-dot.png');
+				}
+
+				if (activePolygon) {
+					activePolygon.setOptions({ strokeColor: "#4CAF50" }); // Reset polygon color
+				}
+
+				activePins.forEach(pin => pin.setMap(null)); // Remove existing pins
+				activePins = [];
+				activeMarker = null;
+				activePolygon = null;
+			}
+
+
+
+            // Function to create a buffer (circle of points) around a given point
+            function createBufferAroundPoint(point, radiusInKm) {
+                const numPoints = 36; // Number of points in the circle
+                const points = [];
+                const earthRadiusKm = 6371;
+
+                for (let i = 0; i < numPoints; i++) {
+                    const angle = (i * 360) / numPoints;
+                    const latitudeOffset = (radiusInKm / earthRadiusKm) * (180 / Math.PI) * Math.cos(angle * (Math.PI / 180));
+                    const longitudeOffset = (radiusInKm / earthRadiusKm) * (180 / Math.PI) * (Math.sin(angle * (Math.PI / 180)) / Math.cos(point.lat * (Math.PI / 180)));
+
+                    points.push({
+                        lat: point.lat + latitudeOffset,
+                        lng: point.lng + longitudeOffset,
+                    });
+                }
+
+                return points;
+            }
+
+            // Function to calculate a smooth convex hull
+            function calculateSmoothHull(points) {
+                const hullPoints = calculateConvexHull(points);
+                return smoothHullPoints(hullPoints);
+            }
+
+            function smoothHullPoints(points) {
+                const smoothPoints = [];
+                const smoothingFactor = 5;
+
+                for (let i = 0; i < points.length; i++) {
+                    const p1 = points[i];
+                    const p2 = points[(i + 1) % points.length];
+
+                    for (let j = 0; j <= smoothingFactor; j++) {
+                        const t = j / smoothingFactor;
+                        const lat = (1 - t) * p1.lat + t * p2.lat;
+                        const lng = (1 - t) * p1.lng + t * p2.lng;
+                        smoothPoints.push({ lat, lng });
+                    }
+                }
+
+                return smoothPoints;
+            }
+
+            // Simple convex hull algorithm (Gift Wrapping/Jarvis March)
+            function calculateConvexHull(points) {
+                if (points.length < 3) return points;
+
+                let hull = [];
+                let pointOnHull = points.reduce((leftmost, p) => (p.lng < leftmost.lng ? p : leftmost), points[0]);
+                let endpoint;
+
+                do {
+                    hull.push(pointOnHull);
+                    endpoint = points[0];
+
+                    for (let i = 1; i < points.length; i++) {
+                        if (endpoint === pointOnHull || isLeftTurn(pointOnHull, endpoint, points[i])) {
+                            endpoint = points[i];
+                        }
+                    }
+
+                    pointOnHull = endpoint;
+                } while (endpoint !== hull[0]);
+
+                return hull;
+            }
+
+            function isLeftTurn(a, b, c) {
+                return (b.lat - a.lat) * (c.lng - a.lng) - (b.lng - a.lng) * (c.lat - a.lat) > 0;
+            }
+
+        } catch (error) {
+            console.error('Error loading map or listings:', error);
+        }
+    }
+
+    // Function to show the listing modal with details
+    function showListingModal(listing) {
+        const modal = document.getElementById('listingModal');
+        const modalContent = document.getElementById('modalContent');
+
+        modalContent.innerHTML = `
+            <h2>${listing.listingType} Listing Details</h2>
+            <p><strong>City:</strong> ${listing.city}</p>
+            <p><strong>State:</strong> ${listing.state}</p>
+            <p><strong>Zip Code:</strong> ${listing.zipCode}</p>
+            <p><strong>Monthly Income:</strong> ${listing.monthlyIncome ? `$${Math.round(listing.monthlyIncome).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : 'Not available'}</p>
+            <p><strong>Asking Price:</strong> ${listing.askingPrice ? `$${Math.round(listing.askingPrice).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : 'Not available'}</p>
+            <div class="photos-container">
+                ${listing.photos ? listing.photos.map(photo => `<img src="${photo}" alt="Listing Photo">`).join('') : 'No photos available'}
+            </div>
+            <button class="message-button">Message Seller</button>
+            <div class="seller-info">
+                <img src="${listing.profileImage || 'default-profile.png'}" alt="Seller Profile Image">
+                <p>${listing.sellerName || 'Unknown Seller'}</p>
+            </div>
+            <div id="modalMap" style="height: 300px; width: 100%; margin-top: 20px;"></div>
+        `;
+
+        const modalMap = new google.maps.Map(document.getElementById('modalMap'), {
+            center: { lat: listing.latitude, lng: listing.longitude },
+            zoom: 13,
+        });
+
+        if (listing.listingType === 'individual') {
+            const position = {
+                lat: listing.latitude + (Math.random() - 0.5) * 0.004,
+                lng: listing.longitude + (Math.random() - 0.5) * 0.004,
+            };
+
+            new google.maps.Marker({
+                position,
+                map: modalMap,
+                title: "Listing Address",
+            });
+
+            modalMap.setCenter(position);
+        } else if (listing.addresses && listing.addresses.length > 0) {
+            const bounds = new google.maps.LatLngBounds();
+            listing.addresses.forEach(addr => {
+                const position = {
+                    lat: addr.latitude + (Math.random() - 0.5) * 0.004,
+                    lng: addr.longitude + (Math.random() - 0.5) * 0.004,
+                };
+
+                const marker = new google.maps.Marker({
+                    position,
+                    map: modalMap,
+                    title: "Listing Address",
+                });
+
+                bounds.extend(marker.getPosition());
+            });
+
+            modalMap.fitBounds(bounds);
+        }
+
+        modal.style.display = "block";
+
+        document.querySelector('.close-button').addEventListener('click', () => {
+            modal.style.display = "none";
+        });
+
+        window.addEventListener('click', function (event) {
+            if (event.target === modal) {
+                modal.style.display = "none";
+            }
+        });
+    }
+// Function to add a heart icon to a listing
+    function createHeartIcon(isFavorited, listingId) {
+        const heart = document.createElement('i');
+        heart.className = isFavorited ? 'fas fa-heart favorited' : 'far fa-heart';
+        heart.style.cursor = 'pointer';
+        heart.addEventListener('click', async (event) => {
+            event.stopPropagation(); // Prevent triggering other events
+            try {
+                // Toggle favorited state
+                const newFavoritedState = !heart.classList.contains('favorited');
+                heart.className = newFavoritedState ? 'fas fa-heart favorited' : 'far fa-heart';
+
+                // Send the new state to the backend
+                const response = await fetch('/favorites', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ listingId, isFavorited: newFavoritedState }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update favorite status');
+                }
+            } catch (error) {
+                console.error('Error updating favorite status:', error);
+                // Revert icon state if there was an error
+                heart.className = heart.classList.contains('favorited') ? 'far fa-heart' : 'fas fa-heart favorited';
+            }
+        });
+        return heart;
+    }
+
+    // Function to display a listing in the sidebar
+    function displayListingInSidebar(listing) {
+        const listingElement = document.createElement('div');
+        listingElement.classList.add('listing');
+        listingElement.innerHTML = `
+            <img src="${listing.photos ? listing.photos[0] : 'default-image.jpg'}" alt="Listing Photo" class="listing-photo">
+            <div class="listing-title">${listing.title}</div>
+            <div class="listing-price">${listing.askingPrice ? `Price: $${Math.round(listing.askingPrice)}` : 'Price not available'}</div>
+            <div class="listing-address">${listing.city}, ${listing.state}, ${listing.zipCode}</div>
+        `;
+
+        // Append the heart icon to the listing
+        const heartIcon = createHeartIcon(listing.isFavorited, listing.id);
+        listingElement.querySelector('.listing-title').appendChild(heartIcon);
+
+        document.getElementById('listingsSidebar').appendChild(listingElement);
+
+        // Add click event for the listing to show modal
+        listingElement.addEventListener('click', () => showListingModal(listing));
+    }
+
+    // Function to display listing details in modal
+    function showListingModal(listing) {
+        const modalContent = document.getElementById('modalContent');
+        modalContent.innerHTML = `
+            <h2>${listing.title}</h2>
+            <p><strong>City:</strong> ${listing.city}</p>
+            <p><strong>State:</strong> ${listing.state}</p>
+            <p><strong>Zip Code:</strong> ${listing.zipCode}</p>
+            <p><strong>Monthly Income:</strong> ${listing.monthlyIncome || 'Not available'}</p>
+            <p><strong>Asking Price:</strong> ${listing.askingPrice || 'Not available'}</p>
+        `;
+
+        // Append the heart icon to the modal header
+        const heartIcon = createHeartIcon(listing.isFavorited, listing.id);
+        modalContent.querySelector('h2').appendChild(heartIcon);
+
+        document.getElementById('listingModal').style.display = 'block';
+    }
+    window.initMap = initMap;
+</script>
+
+<!-- Google Maps script -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC9ZitQS8DlSHi6PGhsSmFglAmoAcMDQUc&callback=initMap&libraries=geometry" async defer></script>
+
+</body>
+
+</html>

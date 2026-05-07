@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="app.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+
+<body>
+    <header>
+        <h1>Account</h1>
+    </header>
+    <nav>
+        <a href="dashboard.html">Marketplace</a>
+		<a href="add-listing.html">Sell</a>
+        <a href="favorites.html">Favorites</a>
+        <a href="messages.html">Messages</a>
+		<a href="donate.html">Donate</a>
+        <a href="account.html">Account</a>
+    </nav>
+    </header>
+    <main>
+        <h2>Account Information</h2>
+        <div class="account-info" id="accountInfo">
+            <div><strong>Full Name:</strong> <span id="displayFullName"></span></div>
+            <div><strong>Email:</strong> <span id="displayEmail"></span></div>
+            <div><strong>Phone:</strong> <span id="displayPhone"></span></div>
+            <div><strong>City:</strong> <span id="displayCity"></span></div>
+            <div><strong>State:</strong> <span id="displayState"></span></div>
+            <button class="edit-button" onclick="editField()">Edit</button>
+        </div>
+
+        <form id="updateAccountForm" style="display: none;">
+            <label for="fullName">Full Name:</label>
+            <input type="text" id="fullName" name="fullName" required>
+
+            <label for="email">Email (requires verification):</label>
+            <div style="display: flex; align-items: center;">
+                <input type="email" id="email" name="email" required style="flex: 1;">
+                <button type="button" id="verifyEmailButton" style="margin-left: 10px; width: calc(30% - 10px);">Verify Email</button>
+            </div>
+
+            <label for="phone">Phone:</label>
+            <input type="text" id="phone" name="phone" required>
+
+            <label for="city">City:</label>
+            <input type="text" id="city" name="city" required>
+
+            <label for="state">State:</label>
+            <input type="text" id="state" name="state" required>
+
+            <label for="profileImage">Profile Image:</label>
+            <input type="file" id="profileImage" name="profileImage" accept="image/*">
+
+            <button type="submit">Save Changes</button>
+        </form>
+
+        <h2>Reset Password</h2>
+        <form id="resetPasswordForm">
+            <label for="currentPassword">Current Password:</label>
+            <input type="password" id="currentPassword" name="currentPassword" required>
+
+            <label for="newPassword">New Password:</label>
+            <input type="password" id="newPassword" name="newPassword" required>
+
+            <label for="confirmPassword">Confirm New Password:</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" required>
+
+            <button type="submit">Reset Password</button>
+        </form>
+        
+        <button id="logoutButton" style="background: #FF4D4D; color: white; margin-top: 30px; width: calc(100% - 20px);">Logout</button>
+    </main>
+    <script>
+        document.getElementById('logoutButton').addEventListener('click', function() {
+            // Clear session storage or any authentication tokens
+            localStorage.removeItem('user');
+            alert('You have been logged out successfully!');
+            window.location.href = 'login.html';
+        });
+
+        document.getElementById('verifyEmailButton').addEventListener('click', function() {
+            // Placeholder verification process
+            alert('A verification email has been sent. Please check your inbox.');
+        });
+
+        document.getElementById('updateAccountForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const updatedUser = {
+                fullName: document.getElementById('fullName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                city: document.getElementById('city').value,
+                state: document.getElementById('state').value,
+                profileImage: document.getElementById('profileImage').files.length > 0
+                    ? document.getElementById('profileImage').files[0].name
+                    : '' // Placeholder for the image file name, you could handle file uploading separately.
+            };
+
+            try {
+                const response = await fetch('http://localhost:3000/update-user', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedUser)
+                });
+
+                if (response.ok) {
+                    alert('Account information updated successfully!');
+                    localStorage.setItem('user', JSON.stringify(updatedUser)); // Update user details in local storage
+                    // Replace account info with updated values
+                    document.getElementById('displayFullName').textContent = updatedUser.fullName;
+                    document.getElementById('displayEmail').textContent = updatedUser.email;
+                    document.getElementById('displayPhone').textContent = updatedUser.phone;
+                    document.getElementById('displayCity').textContent = updatedUser.city;
+                    document.getElementById('displayState').textContent = updatedUser.state;
+
+                    document.getElementById('updateAccountForm').style.display = 'none';
+                    document.getElementById('accountInfo').style.display = 'block';
+                    document.getElementById('logoutButton').style.display = 'block';
+                } else {
+                    const errorMessage = await response.text();
+                    alert('Error updating account information: ' + errorMessage);
+                }
+            } catch (error) {
+                console.error('Error updating account information:', error);
+                alert('Error updating account information. Please try again.');
+            }
+        });
+
+        document.getElementById('resetPasswordForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword === confirmPassword) {
+                alert('Password reset successfully!');
+            } else {
+                alert('Passwords do not match. Please try again.');
+            }
+        });
+
+        // Populate account information dynamically from user data
+        document.addEventListener('DOMContentLoaded', async function() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                alert('User email is not available. Please log in again.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:3000/user-info?email=${encodeURIComponent(user.email)}`);
+
+                if (response.ok) {
+                    const userData = await response.json();
+
+                    document.getElementById('displayFullName').textContent = userData.fullName;
+                    document.getElementById('displayEmail').textContent = userData.email;
+                    document.getElementById('displayPhone').textContent = userData.phone;
+                    document.getElementById('displayCity').textContent = userData.city;
+                    document.getElementById('displayState').textContent = userData.state;
+
+                    document.getElementById('fullName').value = userData.fullName;
+                    document.getElementById('email').value = userData.email;
+                    document.getElementById('phone').value = userData.phone;
+                    document.getElementById('city').value = userData.city;
+                    document.getElementById('state').value = userData.state;
+                } else {
+                    alert("Could not load user information. Please try again later.");
+                }
+            } catch (error) {
+                console.error("Error loading user information:", error);
+                alert("Error loading user information. Please log in again.");
+                window.location.href = 'login.html';
+            }
+        });
+
+        function editField() {
+            document.getElementById('updateAccountForm').style.display = 'block';
+            document.getElementById('accountInfo').style.display = 'none';
+            document.getElementById('logoutButton').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

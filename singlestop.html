@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add a Single Stop</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="/js/singlestop-listings.js" defer></script>
+</head>
+<body>
+    <header>
+        <h1>Add a Single Stop</h1>
+        <nav>
+            <a href="dashboard.html">Marketplace</a>
+            <a href="add-listing.html">Sell</a>
+            <a href="favorites.html">Favorites</a>
+            <a href="messages.html">Messages</a>
+            <a href="donate.html">Donate</a>
+            <a href="account.html">Account</a>
+        </nav>
+    </header>
+    <main>
+        <form id="singlestopForm">
+            <!-- Street Address -->
+            <label for="streetAddress">Street Address: <span class="info-icon">ℹ️</span></label>
+            <input type="text" id="streetAddress" name="streetAddress" required>
+
+            <!-- City -->
+            <label for="city">City:</label>
+            <input type="text" id="city" name="city" required>
+
+            <!-- State -->
+            <label for="state">State:</label>
+            <input type="text" id="state" name="state" required>
+
+            <!-- Zip Code -->
+            <label for="zipCode">Zip Code:</label>
+            <input type="text" id="zipCode" name="zipCode" required>
+
+            <!-- Monthly Income -->
+            <label for="monthlyIncome">Monthly Income:</label>
+            <input type="number" id="monthlyIncome" name="monthlyIncome" required>
+
+            <!-- Asking Price -->
+            <label for="askingPrice">Asking Price:</label>
+            <input type="number" id="askingPrice" name="askingPrice" required>
+
+            <!-- Description -->
+            <label for="description">Description (Optional):</label>
+            <textarea id="description" name="description" placeholder="Enter a description of the listing (optional)"></textarea>
+
+            <!-- Photos -->
+            <label for="photos">Upload Photos (up to 5):</label>
+            <input type="file" id="photos" name="photos" accept="image/*" multiple>
+
+            <!-- Save Listing Button -->
+            <button type="button" id="saveSinglestopListing">Save Listing</button>
+        </form>
+    </main>
+    <script src="/js/singlestop-listings.js" defer></script>
+</body>
+</html>

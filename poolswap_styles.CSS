@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The PoolSwap - All-in-One Pool Management Solution</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #0a5460;
+            color: #fff;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+
+        nav a {
+            color: #fff;
+            margin-left: 20px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .hero-section {
+            display: flex;
+            padding: 50px;
+            background-color: #f5f5f5;
+            align-items: center;
+            justify-content: space-between;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        .hero-section .content {
+            max-width: 50%;
+        }
+
+        .hero-section h2 {
+            font-size: 36px;
+            color: #0a5460;
+            margin-bottom: 20px;
+        }
+
+        .hero-section p {
+            font-size: 18px;
+            color: #444;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .hero-section .buttons {
+            margin-top: 30px;
+        }
+
+        .hero-section .buttons a {
+            display: inline-block;
+            background-color: #ffb400;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-right: 15px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .hero-section .buttons a:hover {
+            background-color: #ff9500;
+        }
+
+        .hero-section .image-placeholder {
+            width: 40%;
+            height: 300px;
+            background-color: #ddd;
+            border-radius: 15px;
+        }
+
+        .testimonial-section, .features-section {
+            padding: 50px;
+        }
+
+        .testimonial-section h3, .features-section h3 {
+            font-size: 28px;
+            color: #0a5460;
+            margin-bottom: 20px;
+        }
+
+        .testimonial-slider {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            animation: fadeInUp 1s ease-in-out;
+        }
+
+        .testimonial-card {
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            min-width: 300px;
+        }
+
+        .testimonial-card h4 {
+            margin-top: 10px;
+            font-size: 18px;
+        }
+
+        .features-section .feature {
+            display: flex;
+            align-items: center;
+            padding: 20px 0;
+            animation: fadeInUp 1.2s ease-in-out;
+        }
+
+        .features-section .feature-icon {
+            width: 100px;
+            height: 100px;
+            background-color: #ddd;
+            border-radius: 50%;
+            margin-right: 20px;
+        }
+
+        .footer {
+            background-color: #0a5460;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            0% { transform: translateY(20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>The PoolSwap</h1>
+        <nav>
+            <a href="#">Blogs</a>
+            <a href="#">Demo</a>
+            <a href="#">Pricing</a>
+            <a href="#">Contact</a>
+            <a href="#" class="get-started">Get Started</a>
+            <a href="#">Login</a>
+        </nav>
+    </header>
+
+    <div class="hero-section">
+        <div class="content">
+            <h2>An all-in-one pool management solution to grow your business.</h2>
+            <p>Transform your pool cleaning business with The PoolSwap. Our comprehensive solution helps you streamline operations, manage client schedules, and grow your pool service efficiently. Dive into efficiency today with The PoolSwap!</p>
+            <div class="buttons">
+                <a href="#">Book a Demo</a>
+                <a href="#">Start Today</a>
+            </div>
+        </div>
+        <div class="image-placeholder"></div>
+    </div>
+
+    <div class="testimonial-section">
+        <h3>What our clients say...</h3>
+        <div class="testimonial-slider">
+            <div class="testimonial-card">
+                <p>"The PoolSwap has streamlined my pool service business and allowed me to save time and grow my client base."</p>
+                <h4>John D.</h4>
+                <span>@john posted - 3 weeks ago</span>
+            </div>
+            <div class="testimonial-card">
+                <p>"Amazing features and great support! The invoicing system is a real time-saver for us."</p>
+                <h4>Jane S.</h4>
+                <span>@jane posted - 1 week ago</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="features-section">
+        <h3>Features to Transform Your Business</h3>
+        <div class="feature">
+            <div class="feature-icon"></div>
+            <div>
+                <h4>Get Organized</h4>
+                <p>Manage all your routes, customers, and schedules in one place with our all-in-one platform.</p>
+            </div>
+        </div>
+        <div class="feature">
+            <div class="feature-icon"></div>
+            <div>
+                <h4>Refined Operations</h4>
+                <p>With our automated billing features and customer management, your operations run smoother than ever.</p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2024 The PoolSwap. All Rights Reserved.</p>
+    </footer>
+</body>
+</html>

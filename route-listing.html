@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Route Listing - PoolSwap</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <<script src="/js/route-listings.js" defer></script>
+</head>
+<body>
+    <header>
+        <h1>Add Route Listing - PoolSwap</h1>
+         <nav>
+			<a href="dashboard.html">Marketplace</a>
+			<a href="add-listing.html">Sell</a>
+			<a href="favorites.html">Favorites</a>
+			<a href="messages.html">Messages</a>
+			<a href="donate.html">Donate</a>
+			<a href="account.html">Account</a>
+		</nav>
+    </header>
+    <main>
+        <form id="addRouteListingForm" enctype="multipart/form-data">
+            <label for="routeTitle">Route Title (max 40 characters):</label>
+            <input type="text" id="routeTitle" name="routeTitle" maxlength="40" required>
+
+            <label for="monthlyIncome">Monthly Income:</label>
+            <input type="number" id="monthlyIncome" name="monthlyIncome" required>
+
+            <label for="askingPrice">Asking Price:</label>
+            <input type="number" id="askingPrice" name="askingPrice" required>
+
+            <div id="addressContainer">
+                <div class="address-container">
+                    <input type="text" name="streetAddress[]" placeholder="Street Address" required>
+                    <input type="text" name="city[]" placeholder="City" required>
+                    <input type="text" name="state[]" placeholder="State" required>
+                    <input type="text" name="zipCode[]" placeholder="Zip Code" required>
+					<input type="number" name="monthlyIncome[]" placeholder="Monthly Income" required>
+                    <button type="button" class="remove-address-button">Remove</button>
+                </div>
+            </div>
+
+            <button type="button" id="addAddressButton" class="add-address-button">Add Address</button>
+
+            <label for="excelFile">Import Addresses from Excel:</label>
+            <input type="file" id="excelFile" name="excelFile" accept=".xlsx">
+
+            <button type="submit" id="saveRouteListing">Save Route Listing</button>
+        </form>
+    </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+</body>
+</html>

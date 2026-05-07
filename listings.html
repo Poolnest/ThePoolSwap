@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Listing - PoolSwap</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <header>
+        <h1>Add Listing - PoolSwap</h1>
+        <nav>
+		<a href="dashboard.html">Marketplace</a>
+		<a href="add-listing.html">Sell</a>
+        <a href="favorites.html">Favorites</a>
+        <a href="messages.html">Messages</a>
+		<a href="donate.html">Donate</a>
+        <a href="account.html">Account</a>
+        </nav>
+    </header>
+    <main>
+        <form id="addListingForm">
+            <div class="listing-type-container">
+                <label for="listingType">Listing Type:</label>
+                <select id="listingType" name="listingType" required>
+                    <option value="">Select Listing Type</option>
+                    <option value="individual">Individual Pool</option>
+                    <option value="route">Route</option>
+                    <option value="business">Business for Sale</option>
+                </select>
+            </div>
+
+            <div id="individualFields" class="listing-fields">
+                <label for="streetAddress">Street Address: <span class="info-icon">ℹ️</span></label>
+                <input type="text" id="streetAddress" name="streetAddress">
+
+                <label for="city">City:</label>
+                <input type="text" id="city" name="city">
+
+                <label for="state">State:</label>
+                <input type="text" id="state" name="state">
+
+                <label for="zipCode">Zip Code:</label>
+                <input type="text" id="zipCode" name="zipCode">
+
+                <label for="monthlyIncome">Monthly Income:</label>
+                <input type="number" id="monthlyIncome" name="monthlyIncome">
+
+                <label for="askingPrice">Asking Price:</label>
+                <input type="number" id="askingPrice" name="askingPrice">
+            </div>
+
+            <div id="routeFields" class="listing-fields" style="display: none;">
+                <label for="routeDetails">Route Details:</label>
+                <textarea id="routeDetails" name="routeDetails" placeholder="Enter each pool address and price"></textarea>
+            </div>
+
+            <div id="businessFields" class="listing-fields" style="display: none;">
+                <label for="numCustomers">Number of Customers:</label>
+                <input type="number" id="numCustomers" name="numCustomers">
+
+                <label for="numTechnicians">Number of Technicians:</label>
+                <input type="number" id="numTechnicians" name="numTechnicians">
+
+                <label for="yearStarted">Year Started:</label>
+                <input type="number" id="yearStarted" name="yearStarted">
+            </div>
+
+            <label for="description">Description (Optional):</label>
+            <textarea id="description" name="description" placeholder="Enter a description of the listing (optional)"></textarea>
+
+            <button type="submit">Add Listing</button>
+        </form>
+    </main>
+    <script>
+        document.getElementById("listingType").addEventListener("change", function() {
+            const individualFields = document.getElementById("individualFields");
+            const routeFields = document.getElementById("routeFields");
+            const businessFields = document.getElementById("businessFields");
+
+            individualFields.style.display = "none";
+            routeFields.style.display = "none";
+            businessFields.style.display = "none";
+
+            switch (this.value) {
+                case "individual":
+                    individualFields.style.display = "block";
+                    break;
+                case "route":
+                    routeFields.style.display = "block";
+                    break;
+                case "business":
+                    businessFields.style.display = "block";
+                    break;
+            }
+        });
+    </script>
+</body>
+</html>
