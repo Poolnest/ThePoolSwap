@@ -3,24 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Account</title>
-    <link rel="stylesheet" href="/css/styles.css">
-    <script src="app.js" defer></script>
+    <title>Account - PoolSwap</title>
+    <link rel="stylesheet" href="/CSS/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
-
 <body>
     <header>
         <h1>Account</h1>
-    </header>
-    <nav>
-        <a href="dashboard.html">Marketplace</a>
-		<a href="add-listing.html">Sell</a>
-        <a href="favorites.html">Favorites</a>
-        <a href="messages.html">Messages</a>
-		<a href="donate.html">Donate</a>
-        <a href="account.html">Account</a>
-    </nav>
+        <nav>
+            <a href="dashboard.html">Marketplace</a>
+            <a href="add-listing.html">Sell</a>
+            <a href="favorites.html">Favorites</a>
+            <a href="messages.html">Messages</a>
+            <a href="donate.html">Donate</a>
+            <a href="account.html">Account</a>
+        </nav>
     </header>
     <main>
         <h2>Account Information</h2>
@@ -38,9 +35,9 @@
             <input type="text" id="fullName" name="fullName" required>
 
             <label for="email">Email (requires verification):</label>
-            <div style="display: flex; align-items: center;">
-                <input type="email" id="email" name="email" required style="flex: 1;">
-                <button type="button" id="verifyEmailButton" style="margin-left: 10px; width: calc(30% - 10px);">Verify Email</button>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="email" id="email" name="email" required style="flex: 1; width: auto;">
+                <button type="button" id="verifyEmailButton" style="width: auto; margin-top: 0; padding: 10px 15px;">Verify</button>
             </div>
 
             <label for="phone">Phone:</label>
@@ -58,7 +55,7 @@
             <button type="submit">Save Changes</button>
         </form>
 
-        <h2>Reset Password</h2>
+        <h2 style="margin-top: 30px;">Reset Password</h2>
         <form id="resetPasswordForm">
             <label for="currentPassword">Current Password:</label>
             <input type="password" id="currentPassword" name="currentPassword" required>
@@ -71,23 +68,25 @@
 
             <button type="submit">Reset Password</button>
         </form>
-        
-        <button id="logoutButton" style="background: #FF4D4D; color: white; margin-top: 30px; width: calc(100% - 20px);">Logout</button>
+
+        <button id="logoutButton" style="background: #FF4D4D; margin-top: 30px;">Logout</button>
     </main>
+
     <script>
-        document.getElementById('logoutButton').addEventListener('click', function() {
-            // Clear session storage or any authentication tokens
+        // Logout
+        document.getElementById('logoutButton').addEventListener('click', function () {
             localStorage.removeItem('user');
             alert('You have been logged out successfully!');
             window.location.href = 'login.html';
         });
 
-        document.getElementById('verifyEmailButton').addEventListener('click', function() {
-            // Placeholder verification process
+        // Verify email placeholder
+        document.getElementById('verifyEmailButton').addEventListener('click', function () {
             alert('A verification email has been sent. Please check your inbox.');
         });
 
-        document.getElementById('updateAccountForm').addEventListener('submit', async function(event) {
+        // Update account
+        document.getElementById('updateAccountForm').addEventListener('submit', async function (event) {
             event.preventDefault();
 
             const updatedUser = {
@@ -96,44 +95,38 @@
                 phone: document.getElementById('phone').value,
                 city: document.getElementById('city').value,
                 state: document.getElementById('state').value,
-                profileImage: document.getElementById('profileImage').files.length > 0
-                    ? document.getElementById('profileImage').files[0].name
-                    : '' // Placeholder for the image file name, you could handle file uploading separately.
             };
 
             try {
-                const response = await fetch('http://localhost:3000/update-user', {
+                const response = await fetch('/update-user', {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(updatedUser)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedUser),
                 });
 
                 if (response.ok) {
                     alert('Account information updated successfully!');
-                    localStorage.setItem('user', JSON.stringify(updatedUser)); // Update user details in local storage
-                    // Replace account info with updated values
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
                     document.getElementById('displayFullName').textContent = updatedUser.fullName;
                     document.getElementById('displayEmail').textContent = updatedUser.email;
                     document.getElementById('displayPhone').textContent = updatedUser.phone;
                     document.getElementById('displayCity').textContent = updatedUser.city;
                     document.getElementById('displayState').textContent = updatedUser.state;
-
                     document.getElementById('updateAccountForm').style.display = 'none';
                     document.getElementById('accountInfo').style.display = 'block';
                     document.getElementById('logoutButton').style.display = 'block';
                 } else {
                     const errorMessage = await response.text();
-                    alert('Error updating account information: ' + errorMessage);
+                    alert('Error updating account: ' + errorMessage);
                 }
             } catch (error) {
-                console.error('Error updating account information:', error);
-                alert('Error updating account information. Please try again.');
+                console.error('Error updating account:', error);
+                alert('Error updating account. Please try again.');
             }
         });
 
-        document.getElementById('resetPasswordForm').addEventListener('submit', function(event) {
+        // Reset password
+        document.getElementById('resetPasswordForm').addEventListener('submit', function (event) {
             event.preventDefault();
             const newPassword = document.getElementById('newPassword').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
@@ -145,38 +138,35 @@
             }
         });
 
-        // Populate account information dynamically from user data
-        document.addEventListener('DOMContentLoaded', async function() {
+        // Load account info on page load
+        document.addEventListener('DOMContentLoaded', async function () {
             const user = JSON.parse(localStorage.getItem('user'));
             if (!user) {
-                alert('User email is not available. Please log in again.');
+                alert('Please log in to view your account.');
                 window.location.href = 'login.html';
                 return;
             }
 
             try {
-                const response = await fetch(`http://localhost:3000/user-info?email=${encodeURIComponent(user.email)}`);
-
+                const response = await fetch(`/user-info?email=${encodeURIComponent(user.email)}`);
                 if (response.ok) {
                     const userData = await response.json();
-
                     document.getElementById('displayFullName').textContent = userData.fullName;
                     document.getElementById('displayEmail').textContent = userData.email;
                     document.getElementById('displayPhone').textContent = userData.phone;
                     document.getElementById('displayCity').textContent = userData.city;
                     document.getElementById('displayState').textContent = userData.state;
-
                     document.getElementById('fullName').value = userData.fullName;
                     document.getElementById('email').value = userData.email;
                     document.getElementById('phone').value = userData.phone;
                     document.getElementById('city').value = userData.city;
                     document.getElementById('state').value = userData.state;
                 } else {
-                    alert("Could not load user information. Please try again later.");
+                    alert('Could not load user information.');
                 }
             } catch (error) {
-                console.error("Error loading user information:", error);
-                alert("Error loading user information. Please log in again.");
+                console.error('Error loading user info:', error);
+                alert('Error loading user information. Please log in again.');
                 window.location.href = 'login.html';
             }
         });

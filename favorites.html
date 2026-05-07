@@ -3,54 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Favorites</title>
-    <link rel="stylesheet" href="/css/styles.css">
-    <script src="app.js" defer></script>
+    <title>Favorites - PoolSwap</title>
+    <link rel="stylesheet" href="/CSS/styles.css">
+    <script src="/JS/app.js" defer></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
-
 <body>
     <header>
-        <h1> Your Favorites</h1>
+        <h1>Your Favorites</h1>
+        <nav>
+            <a href="dashboard.html">Marketplace</a>
+            <a href="add-listing.html">Sell</a>
+            <a href="favorites.html">Favorites</a>
+            <a href="messages.html">Messages</a>
+            <a href="donate.html">Donate</a>
+            <a href="account.html">Account</a>
+        </nav>
     </header>
-    <nav>
-        <a href="dashboard.html">Marketplace</a>
-		<a href="add-listing.html">Sell</a>
-        <a href="favorites.html">Favorites</a>
-        <a href="messages.html">Messages</a>
-		<a href="donate.html">Donate</a>
-        <a href="account.html">Account</a>
-    </nav>
-    </header>
-    <main>
+    <main style="max-width: 1200px;">
         <h2>Your Favorite Listings</h2>
-        <div class="favorite-listings" id="favoriteListings">
+        <!-- ID fixed: was "favoriteListings" in HTML but script referenced "favoritesContainer" -->
+        <div class="favorite-listings" id="favoritesContainer">
             <!-- Favorite listings will be populated here dynamically -->
         </div>
     </main>
+
     <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-    const favorites = JSON.parse(localStorage.getItem('favorites')) || [];
-    const response = await fetch('/listings');
-    const listings = await response.json();
-    const favoriteListings = listings.filter(listing => favorites.includes(listing.id));
+        document.addEventListener('DOMContentLoaded', async () => {
+            const favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+            const favoritesContainer = document.getElementById('favoritesContainer');
 
-    const favoritesContainer = document.getElementById('favoritesContainer');
-    favoriteListings.forEach(listing => {
-        const listingElement = document.createElement('div');
-        listingElement.classList.add('favorite-listing');
-        listingElement.innerHTML = `
-            <img src="${listing.photos ? listing.photos[0] : 'default-image.jpg'}" alt="Listing Photo">
-            <h3>${listing.title || 'Listing'}</h3>
-            <p>${listing.city}, ${listing.state}</p>
-            <p>Sale Price: ${listing.askingPrice ? `$${listing.askingPrice}` : 'Price not available'}</p>
-            <p>Inc.: ${listing.monthlyIncome ? `$${listing.monthlyIncome}/month` : 'Income not available'}</p>
-        `;
-        favoritesContainer.appendChild(listingElement);
-    });
-});
+            if (favorites.length === 0) {
+                favoritesContainer.innerHTML = '<p style="color:#777;">You have no saved favorites yet. Browse the <a href="dashboard.html">Marketplace</a> to add some!</p>';
+                return;
+            }
 
-</script>
+            try {
+                const response = await fetch('/listings');
+                if (!response.ok) throw new Error('Failed to fetch listings');
 
+                const listings = await response.json();
+                const favoriteListings = listings.filter(listing => favorites.includes(listing.id));
+
+                if (favoriteListings.length === 0) {
+                    favoritesContainer.innerHTML = '<p style="color:#777;">None of your saved favorites are currently active.</p>';
+                    return;
+                }
+
+                favoriteListings.forEach(listing => {
+                    const listingElement = document.createElement('div');
+                    listingElement.classList.add('listing-card');
+                    listingElement.innerHTML = `
+                        <img class="listing-image" src="${listing.photos ? listing.photos[0] : 'default-image.jpg'}" alt="Listing Photo">
+                        <div class="listing-details">
+                            <h3 class="listing-title">${listing.title || listing.listingType || 'Listing'}</h3>
+                            <p class="listing-info">${listing.city}, ${listing.state}</p>
+                            <p class="listing-info">
+                                ${listing.askingPrice ? `Sale Price: $${Math.round(listing.askingPrice).toLocaleString()}` : 'Price not available'}
+                            </p>
+                            <p class="listing-info">
+                                ${listing.monthlyIncome ? `Inc.: $${Math.round(listing.monthlyIncome).toLocaleString()}/month` : 'Income not available'}
+                            </p>
+                        </div>
+                    `;
+                    favoritesContainer.appendChild(listingElement);
+                });
+            } catch (error) {
+                console.error('Error loading favorites:', error);
+                favoritesContainer.innerHTML = '<p style="color:#cc0000;">Error loading favorites. Please try again later.</p>';
+            }
+        });
+    </script>
 </body>
 </html>

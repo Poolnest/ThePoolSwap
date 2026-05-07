@@ -3,25 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messages</title>
-    <link rel="stylesheet" href="/css/styles.css">
-    <script src="app.js" defer></script>
+    <title>Messages - PoolSwap</title>
+    <link rel="stylesheet" href="/CSS/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
-
 <body>
     <header>
         <h1>Messages</h1>
+        <nav>
+            <a href="dashboard.html">Marketplace</a>
+            <a href="add-listing.html">Sell</a>
+            <a href="favorites.html">Favorites</a>
+            <a href="messages.html">Messages</a>
+            <a href="donate.html">Donate</a>
+            <a href="account.html">Account</a>
+        </nav>
     </header>
-    <nav>
-        <a href="dashboard.html">Marketplace</a>
-		<a href="add-listing.html">Sell</a>
-        <a href="favorites.html">Favorites</a>
-        <a href="messages.html">Messages</a>
-		<a href="donate.html">Donate</a>
-        <a href="account.html">Account</a>
-    </nav>
-    </header>
+
     <div class="messages-container">
         <div class="contact-list" id="contactList">
             <div class="contact" onclick="selectContact('John Doe')">
@@ -32,48 +30,46 @@
                 <div class="contact-name">Jane Smith</div>
                 <div class="last-message">Can we discuss the pricing details?</div>
             </div>
-            <!-- More contacts can be added here -->
         </div>
+
         <div class="message-window">
             <div class="message-header" id="messageHeader">Select a contact to view messages</div>
-            <div class="message-body" id="messageBody">
-                <!-- Messages will appear here -->
-            </div>
+            <div class="message-body" id="messageBody"></div>
             <div class="message-input-container">
                 <input type="text" id="messageInput" class="message-input" placeholder="Type a message...">
                 <button class="send-button" onclick="sendMessage()">Send</button>
             </div>
         </div>
     </div>
+
     <script>
         function selectContact(contactName) {
             document.getElementById('messageHeader').textContent = contactName;
-            document.getElementById('messageBody').innerHTML = ''; // Clear previous messages
+            document.getElementById('messageBody').innerHTML = '';
 
-            // Load messages for the selected contact (this is just a placeholder)
             const messages = [
-                { sender: 'John Doe', content: 'Hey, I'm interested in your pool route...', type: 'received' },
+                { sender: contactName, content: 'Hey, I\'m interested in your pool route...', type: 'received' },
                 { sender: 'You', content: 'Sure! Let me know what you need.', type: 'sent' }
             ];
 
             messages.forEach(message => {
                 const messageDiv = document.createElement('div');
-                messageDiv.classList.add('message');
-                messageDiv.classList.add(message.type === 'sent' ? 'sent' : 'received');
+                messageDiv.classList.add('message', message.type);
                 const messageContent = document.createElement('div');
                 messageContent.classList.add('message-content');
                 messageContent.textContent = message.content;
                 messageDiv.appendChild(messageContent);
                 document.getElementById('messageBody').appendChild(messageDiv);
             });
+
+            scrollToBottom();
         }
 
         function sendMessage() {
             const messageInput = document.getElementById('messageInput');
             const messageContent = messageInput.value.trim();
-            if (messageContent === '') return;
+            if (!messageContent) return;
 
-            // Add the message to the message body
             const messageDiv = document.createElement('div');
             messageDiv.classList.add('message', 'sent');
             const messageContentDiv = document.createElement('div');
@@ -82,12 +78,19 @@
             messageDiv.appendChild(messageContentDiv);
             document.getElementById('messageBody').appendChild(messageDiv);
 
-            // Clear the input field
             messageInput.value = '';
-
-            // Scroll to the bottom of the message body
-            document.getElementById('messageBody').scrollTop = document.getElementById('messageBody').scrollHeight;
+            scrollToBottom();
         }
+
+        function scrollToBottom() {
+            const body = document.getElementById('messageBody');
+            body.scrollTop = body.scrollHeight;
+        }
+
+        // Allow Enter key to send message
+        document.getElementById('messageInput').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') sendMessage();
+        });
     </script>
 </body>
 </html>
