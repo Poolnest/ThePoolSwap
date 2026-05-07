@@ -1,0 +1,13 @@
+# Dependencies - Render installs these automatically
+node_modules/
+
+# Environment variables - NEVER share these
+.env
+
+# Upload folder contents
+uploads/*
+!uploads/.gitkeep
+
+# OS files
+.DS_Store
+Thumbs.db
